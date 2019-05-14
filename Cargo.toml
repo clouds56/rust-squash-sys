@@ -24,6 +24,7 @@ lazy_static = "1.0"
 [build-dependencies]
 pkg-config = "0.3"
 bindgen = "0.32.1"
+cmake = "0.1"
 
 [features]
 wide-char-api = []

@@ -1,0 +1,3 @@
+[submodule "squash"]
+	path = squash
+	url = https://github.com/quixdb/squash.git

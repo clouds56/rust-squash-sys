@@ -7,10 +7,21 @@ use std::path::PathBuf;
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=wrapper");
-    let library = pkg_config::probe_library("squash-0.8").unwrap();
-
-    let clang_args = library.include_paths.iter().map(|path| format!("-I{}", path.display())).chain(
-        library.link_paths.iter().map(|path| format!("-L{}", path.display())));
+    println!("cargo:rerun-if-changed=squash/");
+    fn get_deps(libname: &str) -> (Vec<String>, Vec<String>) {
+        let library = match pkg_config::probe_library(libname) {
+            Ok(library) => library,
+            _ => {
+                let prefix = cmake::Config::new("squash").build();
+                env::set_var("PKG_CONFIG_PATH", prefix.join("lib").join("pkgconfig"));
+                pkg_config::probe_library(libname).unwrap()
+            }
+        };
+        let clang_args = library.include_paths.iter().map(|path| format!("-I{}", path.display())).chain(
+            library.link_paths.iter().map(|path| format!("-L{}", path.display()))).collect();
+        (clang_args, library.libs)
+    }
+    let (clang_args, libs) = get_deps("squash-0.8");
 
     let mut bindings = bindgen::Builder::default()
         .clang_args(clang_args)
@@ -38,7 +49,7 @@ fn main() {
         })
         .whitelist_function("squash.*")
         .whitelist_type("Squash.*");
-    for lib in library.libs {
+    for lib in libs {
         bindings = bindings.link(lib);
     }
 
